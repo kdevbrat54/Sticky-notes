@@ -1,48 +1,197 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>महत्वपूर्ण नोट</title>
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            background-color: #f0f8ff;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sticky Notes</title>
 
-        .sticky-note {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 250px;
-            max-height: 150px;
-            background-color: #FFFFFF;
-            color: #87CEEB;
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(135, 206, 235, 0.5);
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            overflow-y: auto;
-            z-index: 9999;
-            border-left: 5px solid #87CEEB;
-        }
+<style>
+* {
+    box-sizing: border-box;
+}
 
-        .sticky-note h4 {
-            margin: 0 0 5px 0;
-            font-size: 15px;
-            color: #007BFF;
-        }
-    </style>
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #f0f8ff;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    margin: 0 0 15px;
+    color: #007BFF;
+}
+
+#addNote {
+    border: none;
+    background: #007BFF;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#notesContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+    justify-content: center;
+}
+
+.note {
+    width: 280px;
+    min-height: 190px;
+    background: white;
+    border-left: 5px solid #87CEEB;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.note input {
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid #87CEEB;
+    padding: 8px 4px;
+    font-size: 17px;
+    font-weight: bold;
+    outline: none;
+}
+
+.note textarea {
+    width: 100%;
+    height: 100px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 8px;
+    resize: vertical;
+    font-size: 15px;
+    outline: none;
+}
+
+.delete {
+    margin-top: 10px;
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.empty {
+    color: #777;
+    text-align: center;
+    margin-top: 30px;
+}
+</style>
 </head>
+
 <body>
 
-    <div class="sticky-note">
-        <h4>important notes</h4>
-        <p>notes which very important</p>
-    </div>
+<header>
+    <h1>📝 Sticky Notes</h1>
+    <button id="addNote">＋ New Note</button>
+</header>
+
+<div id="notesContainer"></div>
+
+<script>
+
+const container = document.getElementById("notesContainer");
+const addButton = document.getElementById("addNote");
+
+let notes = JSON.parse(localStorage.getItem("stickyNotes")) || [];
+
+function saveNotes() {
+    localStorage.setItem("stickyNotes", JSON.stringify(notes));
+}
+
+function renderNotes() {
+
+    container.innerHTML = "";
+
+    if (notes.length === 0) {
+        container.innerHTML =
+            '<div class="empty">अभी कोई note नहीं है।<br>＋ New Note दबाकर पहला note बनाएं।</div>';
+        return;
+    }
+
+    notes.forEach((note, index) => {
+
+        const noteDiv = document.createElement("div");
+        noteDiv.className = "note";
+
+        noteDiv.innerHTML = `
+            <input
+                type="text"
+                placeholder="Note title"
+                value="${escapeHTML(note.title)}"
+            >
+
+            <textarea
+                placeholder="यहाँ अपना note लिखें..."
+            >${escapeHTML(note.text)}</textarea>
+
+            <button class="delete">🗑 Delete</button>
+        `;
+
+        const title = noteDiv.querySelector("input");
+        const text = noteDiv.querySelector("textarea");
+        const deleteButton = noteDiv.querySelector(".delete");
+
+        title.addEventListener("input", () => {
+            notes[index].title = title.value;
+            saveNotes();
+        });
+
+        text.addEventListener("input", () => {
+            notes[index].text = text.value;
+            saveNotes();
+        });
+
+        deleteButton.addEventListener("click", () => {
+            notes.splice(index, 1);
+            saveNotes();
+            renderNotes();
+        });
+
+        container.appendChild(noteDiv);
+    });
+}
+
+function escapeHTML(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+addButton.addEventListener("click", () => {
+
+    notes.push({
+        title: "New Note",
+        text: ""
+    });
+
+    saveNotes();
+    renderNotes();
+
+});
+
+renderNotes();
+
+</script>
 
 </body>
 </html>
