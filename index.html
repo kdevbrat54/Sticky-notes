@@ -3,94 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sticky Notes</title>
+
+<title>My Sticky Notes</title>
 
 <style>
 * {
     box-sizing: border-box;
 }
 
-body {
+html, body {
     margin: 0;
-    min-height: 100vh;
-    background: #f0f8ff;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     font-family: Arial, sans-serif;
 }
 
-header {
-    padding: 20px;
-    text-align: center;
+/* HOME BOARD */
+body {
+    background: #eef7ff;
 }
 
-h1 {
-    margin: 0 0 15px;
-    color: #007BFF;
+header {
+    height: 65px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: relative;
+    z-index: 10000;
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: bold;
+    color: #007bff;
 }
 
 #addNote {
     border: none;
-    background: #007BFF;
+    background: #007bff;
     color: white;
-    padding: 12px 20px;
+    padding: 11px 16px;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
 }
 
-#notesContainer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 20px;
-    justify-content: center;
+/* BOARD */
+#board {
+    position: absolute;
+    top: 65px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
 }
 
+/* NOTE */
 .note {
-    width: 280px;
-    min-height: 190px;
-    background: white;
-    border-left: 5px solid #87CEEB;
+    position: absolute;
+    width: 250px;
+    min-height: 180px;
+    background: #fff;
+    border-left: 5px solid #87ceeb;
     border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.18);
+    padding: 12px;
+    touch-action: none;
+    user-select: none;
 }
 
-.note input {
-    width: 100%;
+/* NOTE HEADER */
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: grab;
+}
+
+.note-header:active {
+    cursor: grabbing;
+}
+
+.note-title {
+    width: 180px;
     border: none;
-    border-bottom: 2px solid #87CEEB;
-    padding: 8px 4px;
-    font-size: 17px;
+    border-bottom: 2px solid #87ceeb;
+    outline: none;
+    font-size: 16px;
     font-weight: bold;
-    outline: none;
-}
-
-.note textarea {
-    width: 100%;
-    height: 100px;
-    margin-top: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 8px;
-    resize: vertical;
-    font-size: 15px;
-    outline: none;
+    padding: 5px;
+    background: transparent;
 }
 
 .delete {
-    margin-top: 10px;
+    border: none;
     background: #ff4d4d;
     color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
     cursor: pointer;
 }
 
+/* NOTE TEXT */
+.note-text {
+    width: 100%;
+    height: 105px;
+    resize: none;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    outline: none;
+    padding: 8px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    background: #fff;
+    user-select: text;
+}
+
+/* EMPTY */
 .empty {
-    color: #777;
+    position: absolute;
+    top: 45%;
+    width: 100%;
     text-align: center;
-    margin-top: 30px;
+    color: #777;
+    font-size: 17px;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+
+    header {
+        height: 60px;
+    }
+
+    .logo {
+        font-size: 18px;
+    }
+
+    #addNote {
+        padding: 9px 12px;
+        font-size: 14px;
+    }
+
+    #board {
+        top: 60px;
+    }
+
+    .note {
+        width: 230px;
+    }
+
+    .note-title {
+        width: 160px;
+    }
 }
 </style>
 </head>
@@ -98,98 +169,327 @@ h1 {
 <body>
 
 <header>
-    <h1>📝 Sticky Notes</h1>
-    <button id="addNote">＋ New Note</button>
+
+    <div class="logo">
+        📝 Sticky Notes
+    </div>
+
+    <button id="addNote">
+        ＋ New Note
+    </button>
+
 </header>
 
-<div id="notesContainer"></div>
+<div id="board"></div>
 
 <script>
 
-const container = document.getElementById("notesContainer");
+const board = document.getElementById("board");
 const addButton = document.getElementById("addNote");
 
-let notes = JSON.parse(localStorage.getItem("stickyNotes")) || [];
+const STORAGE_KEY = "my_sticky_notes_board";
 
+let notes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+
+/* SAVE */
 function saveNotes() {
-    localStorage.setItem("stickyNotes", JSON.stringify(notes));
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(notes)
+    );
 }
 
-function renderNotes() {
 
-    container.innerHTML = "";
+/* CREATE NOTE */
+function createNote(note) {
 
-    if (notes.length === 0) {
-        container.innerHTML =
-            '<div class="empty">अभी कोई note नहीं है।<br>＋ New Note दबाकर पहला note बनाएं।</div>';
-        return;
-    }
+    const element = document.createElement("div");
 
-    notes.forEach((note, index) => {
+    element.className = "note";
 
-        const noteDiv = document.createElement("div");
-        noteDiv.className = "note";
+    element.style.left = note.x + "px";
+    element.style.top = note.y + "px";
 
-        noteDiv.innerHTML = `
+    element.innerHTML = `
+
+        <div class="note-header">
+
             <input
+                class="note-title"
                 type="text"
-                placeholder="Note title"
                 value="${escapeHTML(note.title)}"
+                placeholder="Title"
             >
 
-            <textarea
-                placeholder="यहाँ अपना note लिखें..."
-            >${escapeHTML(note.text)}</textarea>
+            <button class="delete">
+                🗑
+            </button>
 
-            <button class="delete">🗑 Delete</button>
-        `;
+        </div>
 
-        const title = noteDiv.querySelector("input");
-        const text = noteDiv.querySelector("textarea");
-        const deleteButton = noteDiv.querySelector(".delete");
+        <textarea
+            class="note-text"
+            placeholder="यहाँ अपना note लिखें..."
+        >${escapeHTML(note.text)}</textarea>
 
-        title.addEventListener("input", () => {
-            notes[index].title = title.value;
-            saveNotes();
-        });
+    `;
 
-        text.addEventListener("input", () => {
-            notes[index].text = text.value;
-            saveNotes();
-        });
+    board.appendChild(element);
 
-        deleteButton.addEventListener("click", () => {
-            notes.splice(index, 1);
-            saveNotes();
-            renderNotes();
-        });
 
-        container.appendChild(noteDiv);
+    const title =
+        element.querySelector(".note-title");
+
+    const text =
+        element.querySelector(".note-text");
+
+    const deleteButton =
+        element.querySelector(".delete");
+
+    const header =
+        element.querySelector(".note-header");
+
+
+    /* SAVE TEXT */
+    title.addEventListener("input", () => {
+
+        note.title = title.value;
+
+        saveNotes();
+
     });
+
+
+    text.addEventListener("input", () => {
+
+        note.text = text.value;
+
+        saveNotes();
+
+    });
+
+
+    /* DELETE */
+    deleteButton.addEventListener("click", (event) => {
+
+        event.stopPropagation();
+
+        notes = notes.filter(
+            n => n.id !== note.id
+        );
+
+        saveNotes();
+
+        element.remove();
+
+        checkEmpty();
+
+    });
+
+
+    /* DRAG */
+    let dragging = false;
+
+    let startX = 0;
+    let startY = 0;
+
+    let originalX = 0;
+    let originalY = 0;
+
+
+    header.addEventListener(
+        "pointerdown",
+        startDrag
+    );
+
+
+    function startDrag(event) {
+
+        dragging = true;
+
+        header.setPointerCapture(
+            event.pointerId
+        );
+
+        startX = event.clientX;
+        startY = event.clientY;
+
+        originalX = note.x;
+        originalY = note.y;
+
+        element.style.zIndex =
+            Date.now();
+
+    }
+
+
+    header.addEventListener(
+        "pointermove",
+        drag
+    );
+
+
+    function drag(event) {
+
+        if (!dragging) return;
+
+        const dx =
+            event.clientX - startX;
+
+        const dy =
+            event.clientY - startY;
+
+        let newX =
+            originalX + dx;
+
+        let newY =
+            originalY + dy;
+
+
+        /* BOARD LIMITS */
+
+        const maxX =
+            board.clientWidth -
+            element.offsetWidth;
+
+        const maxY =
+            board.clientHeight -
+            element.offsetHeight;
+
+
+        newX =
+            Math.max(
+                0,
+                Math.min(newX, maxX)
+            );
+
+        newY =
+            Math.max(
+                0,
+                Math.min(newY, maxY)
+            );
+
+
+        note.x = newX;
+        note.y = newY;
+
+        element.style.left =
+            newX + "px";
+
+        element.style.top =
+            newY + "px";
+
+    }
+
+
+    header.addEventListener(
+        "pointerup",
+        stopDrag
+    );
+
+    header.addEventListener(
+        "pointercancel",
+        stopDrag
+    );
+
+
+    function stopDrag() {
+
+        if (!dragging) return;
+
+        dragging = false;
+
+        saveNotes();
+
+    }
+
 }
 
+
+/* ADD NEW NOTE */
+addButton.addEventListener(
+    "click",
+    () => {
+
+        const note = {
+
+            id:
+                Date.now(),
+
+            title:
+                "New Note",
+
+            text:
+                "",
+
+            x:
+                30 + Math.random() * 80,
+
+            y:
+                30 + Math.random() * 80
+
+        };
+
+
+        notes.push(note);
+
+        saveNotes();
+
+        createNote(note);
+
+        checkEmpty();
+
+    }
+);
+
+
+/* ESCAPE HTML */
 function escapeHTML(text) {
-    return text
+
+    return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+
 }
 
-addButton.addEventListener("click", () => {
 
-    notes.push({
-        title: "New Note",
-        text: ""
-    });
+/* EMPTY MESSAGE */
+function checkEmpty() {
 
-    saveNotes();
-    renderNotes();
+    const old =
+        document.querySelector(".empty");
 
-});
+    if (old) old.remove();
 
-renderNotes();
+
+    if (notes.length === 0) {
+
+        const empty =
+            document.createElement("div");
+
+        empty.className = "empty";
+
+        empty.innerHTML =
+            "📝 अभी कोई note नहीं है<br>＋ New Note दबाकर note बनाएं";
+
+        board.appendChild(empty);
+
+    }
+
+}
+
+
+/* LOAD SAVED NOTES */
+
+notes.forEach(
+    note => createNote(note)
+);
+
+checkEmpty();
 
 </script>
 
